@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador Backflush SAP PM v4 — Sabesp</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --teal:#0F6E56;--teal-l:#E1F5EE;--teal-d:#085041;
+  --green-l:#EAF3DE;--green-d:#27500A;
+  --amber-l:#FAEEDA;--amber-d:#633806;
+  --red-l:#FCEBEB;--red-d:#791F1F;
+  --blue-l:#E6F1FB;--blue-d:#0C447C;
+  --purple-l:#EEEDFE;--purple-d:#3730A3;
+  --g50:#F8FAFC;--g100:#F1F5F9;--g200:#E2E8F0;
+  --g400:#94A3B8;--g600:#475569;--g800:#1E293B;
+  --white:#FFFFFF;--r-sm:6px;--r-md:8px;--r-lg:12px;
+}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--g100);color:var(--g800);font-size:14px;line-height:1.5}
+.page{max-width:1100px;margin:0 auto;padding:1.25rem 1rem 3rem}
+header{background:var(--white);border-radius:var(--r-lg);border:1px solid var(--g200);padding:1rem 1.5rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+header h1{font-size:16px;font-weight:600;color:var(--g800);display:flex;align-items:center;gap:8px}
+header h1 i{color:var(--teal);font-size:20px}
+.version{background:var(--purple-l);color:var(--purple-d);font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px}
+.badge{background:var(--teal-l);color:var(--teal-d);font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px}
+.tabs{display:flex;gap:2px;margin-bottom:1rem;border-bottom:1px solid var(--g200);overflow-x:auto}
+.tab{padding:8px 14px;font-size:12px;font-weight:500;color:var(--g400);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;white-space:nowrap;display:flex;align-items:center;gap:5px}
+.tab:hover{color:var(--g600)}.tab.active{color:var(--teal);border-bottom-color:var(--teal)}
+.panel{display:none}.panel.active{display:block}
+.card{background:var(--white);border:1px solid var(--g200);border-radius:var(--r-lg);padding:1.25rem;margin-bottom:1rem}
+.card-label{font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1rem}
+.metric{background:var(--white);border:1px solid var(--g200);border-radius:var(--r-lg);padding:.9rem 1rem}
+.metric-val{font-size:26px;font-weight:600;line-height:1;margin-bottom:3px}
+.metric-lbl{font-size:10px;color:var(--g400);font-weight:500}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:var(--r-md);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;border:1px solid var(--g200);background:var(--white);color:var(--g600)}
+.btn:hover:not(:disabled){background:var(--g50)}.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-primary{background:var(--teal);color:var(--teal-l);border-color:var(--teal)}.btn-primary:hover:not(:disabled){opacity:.88}
+.btn-danger{background:var(--red-l);color:var(--red-d);border-color:#FCA5A5}.btn-amber{background:var(--amber-l);color:var(--amber-d);border-color:#FCD34D}
+.btn-sm{padding:4px 10px;font-size:11px}
+.alert{padding:10px 14px;border-radius:var(--r-md);font-size:12px;margin-bottom:8px;display:flex;align-items:flex-start;gap:8px;line-height:1.5}
+.alert-ok{background:var(--green-l);color:var(--green-d);border:1px solid #86EFAC}
+.alert-warn{background:var(--amber-l);color:var(--amber-d);border:1px solid #FCD34D}
+.alert-err{background:var(--red-l);color:var(--red-d);border:1px solid #FCA5A5}
+.alert-info{background:var(--blue-l);color:var(--blue-d);border:1px solid #93C5FD}
+.toast{position:fixed;top:16px;right:16px;z-index:9999;padding:10px 16px;border-radius:var(--r-lg);font-size:13px;font-weight:500;display:none;align-items:center;gap:8px;box-shadow:0 4px 24px rgba(0,0,0,.12);max-width:380px}
+.toast-ok{background:#052E16;color:#4ADE80}.toast-err{background:#450A0A;color:#F87171}.toast-warn{background:#422006;color:#FCD34D}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{background:var(--g50);padding:7px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--g200);white-space:nowrap}
+.tbl td{padding:6px 10px;border-bottom:1px solid var(--g100);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}.tbl tr:hover td{background:var(--g50)}
+.tag{font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;white-space:nowrap}
+.tag-auto{background:var(--teal-l);color:var(--teal-d)}.tag-manual{background:var(--g100);color:var(--g600);border:1px solid var(--g200)}
+.tag-ok{background:var(--green-l);color:var(--green-d)}.tag-warn{background:var(--amber-l);color:var(--amber-d)}
+.tag-err{background:var(--red-l);color:var(--red-d)}.tag-cogi{background:var(--purple-l);color:var(--purple-d)}
+.os-row{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--r-md);background:var(--g50);margin-bottom:5px;border:1px solid transparent;transition:all .15s}
+.os-row:hover{border-color:var(--g200);background:var(--white)}.os-row.selected{border-color:var(--teal);background:var(--teal-l)}
+.os-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;white-space:nowrap}
+.badge-aberta{background:var(--blue-l);color:var(--blue-d)}.badge-em-andamento{background:var(--amber-l);color:var(--amber-d)}
+.badge-confirmada{background:var(--green-l);color:var(--green-d)}.badge-cancelada{background:var(--g100);color:var(--g600)}
+.os-info{flex:1;min-width:0}.os-id{font-size:11px;font-weight:700;color:var(--g800);font-family:monospace}
+.os-sub{font-size:11px;color:var(--g400);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.flow-steps{display:flex;align-items:center;gap:3px;margin-bottom:1rem;overflow-x:auto}
+.fs{flex:1;min-width:80px;text-align:center;padding:7px 4px;border-radius:var(--r-md);font-size:10px;font-weight:500;border:1px solid var(--g200);background:var(--g50);color:var(--g400);transition:all .3s;line-height:1.35}
+.fs.active{background:var(--teal-l);border-color:var(--teal);color:var(--teal-d)}
+.fs.done{background:var(--green-l);border-color:#3B6D11;color:var(--green-d)}
+.fs.error{background:var(--red-l);border-color:#A32D2D;color:var(--red-d)}
+.fs-arr{color:var(--g200);font-size:14px;flex-shrink:0}
+.sap-console{font-family:'Courier New',monospace;font-size:11px;background:#0F172A;color:#94A3B8;border-radius:var(--r-md);padding:12px 14px;margin-top:10px;line-height:1.8;display:none;white-space:pre;overflow-x:auto;border:1px solid #1E293B}
+.sap-ok{color:#4ADE80}.sap-warn{color:#FCD34D}.sap-err{color:#F87171}.sap-head{color:#7DD3FC}.sap-262{color:#C084FC}
+.log-item{font-size:11px;padding:5px 10px;border-radius:var(--r-sm);margin-bottom:4px;display:flex;gap:10px;line-height:1.5;align-items:flex-start}
+.log-ok{background:var(--green-l);color:var(--green-d)}.log-warn{background:var(--amber-l);color:var(--amber-d)}
+.log-err{background:var(--red-l);color:var(--red-d)}.log-info{background:var(--g50);color:var(--g600);border:1px solid var(--g200)}
+.log-262{background:var(--purple-l);color:var(--purple-d)}.log-time{font-weight:700;white-space:nowrap;font-family:monospace}
+.bar-track{height:5px;background:var(--g100);border-radius:3px;overflow:hidden;margin-top:3px}
+.bar-fill{height:100%;border-radius:3px;transition:width .6s ease}
+.bar-ok{background:var(--teal)}.bar-mid{background:#BA7517}.bar-low{background:#E24B4A}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.04em}
+.form-group input,.form-group select{padding:8px 10px;border:1px solid var(--g200);border-radius:var(--r-md);font-size:13px;color:var(--g800);background:var(--white);outline:none;transition:border-color .15s}
+.form-group input:focus,.form-group select:focus{border-color:var(--teal)}
+.form-group input.invalid{border-color:#F87171;background:#FFF5F5}.form-group input.valid{border-color:#4ADE80}
+.field-hint{font-size:10px;color:var(--g400);margin-top:2px}.field-err{font-size:10px;color:var(--red-d);margin-top:2px;display:none}
+.mat-add-row{display:grid;grid-template-columns:2fr 100px 36px;gap:8px;align-items:end;margin-bottom:8px}
+.btn-icon{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:var(--r-md);border:1px solid var(--g200);background:var(--white);cursor:pointer;color:var(--g400)}
+.btn-icon:hover{background:var(--red-l);border-color:#FCA5A5;color:var(--red-d)}
+.import-zone{border:2px dashed var(--g200);border-radius:var(--r-lg);padding:1.5rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--g50);display:block}
+.import-zone:hover,.import-zone.drag{border-color:var(--teal);background:var(--teal-l)}
+.import-zone i{font-size:32px;color:var(--g400);margin-bottom:6px;display:block}
+input[type=file]{display:none}
+.cogi-row{display:grid;grid-template-columns:1fr 130px 80px 100px;gap:8px;align-items:center;padding:8px 10px;border-radius:var(--r-md);background:var(--purple-l);border:1px solid #C4B5FD;margin-bottom:6px;font-size:12px}
+.batch-bar{background:var(--teal-l);border:1px solid var(--teal);border-radius:var(--r-md);padding:8px 12px;display:none;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;flex-wrap:wrap}
+.batch-bar.visible{display:flex}
+.preflight-row{display:flex;align-items:flex-start;gap:8px;padding:6px 10px;border-radius:var(--r-sm);margin-bottom:4px;font-size:12px}
+.preflight-ok{background:var(--green-l);color:var(--green-d)}.preflight-err{background:var(--red-l);color:var(--red-d)}.preflight-warn{background:var(--amber-l);color:var(--amber-d)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--g600);margin-top:8px;padding:8px 12px;background:var(--g50);border-radius:var(--r-md);border:1px solid var(--g200)}
+.legend-item{display:flex;align-items:center;gap:5px}.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.search-box{display:flex;align-items:center;gap:6px;background:var(--g50);border:1px solid var(--g200);border-radius:var(--r-md);padding:6px 10px;margin-bottom:10px}
+.search-box input{border:none;background:transparent;outline:none;font-size:12px;color:var(--g800);flex:1}
+.search-box i{color:var(--g400);font-size:14px}
+.centro-badge{background:var(--blue-l);color:var(--blue-d);font-size:10px;padding:1px 6px;border-radius:20px;font-weight:500}
+.empty{color:var(--g400);font-size:12px;padding:.5rem 0;text-align:center}
+.flow-status{font-size:12px;color:var(--g600)}
+.section-title{font-size:13px;font-weight:600;color:var(--g800);margin-bottom:.6rem}
+.mb52-banner{background:linear-gradient(135deg,var(--teal-l),var(--blue-l));border:1px solid var(--teal);border-radius:var(--r-lg);padding:1rem 1.25rem;margin-bottom:1rem;display:flex;align-items:center;gap:12px}
+.mb52-banner i{font-size:24px;color:var(--teal);flex-shrink:0}
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+.filter-bar select,.filter-bar input{padding:5px 10px;border:1px solid var(--g200);border-radius:var(--r-md);font-size:12px;color:var(--g800);background:var(--white);outline:none}
+.tbl-check{width:16px;height:16px;cursor:pointer;accent-color:var(--teal)}
+@media(max-width:700px){.cols,.metrics,.form-grid{grid-template-columns:1fr}.cogi-row{grid-template-columns:1fr 80px}}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+<div class="page">
+
+<header>
+  <h1><i class="ti ti-settings-cog"></i>Simulador Backflush SAP PM <span class="version">v4 · Sabesp</span></h1>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <span class="badge" id="mb52-status">Base MB52: não carregada</span>
+    <span class="badge" style="background:var(--blue-l);color:var(--blue-d)" id="mat-count-badge">0 materiais</span>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('sim')"><i class="ti ti-player-play"></i>Simulador</div>
+  <div class="tab" onclick="switchTab('lote')"><i class="ti ti-layers"></i>Lote de OS</div>
+  <div class="tab" onclick="switchTab('cogi')"><i class="ti ti-alert-triangle"></i>COGI <span id="cogi-badge" style="display:none;background:#EDE9FE;color:#5B21B6;font-size:10px;padding:1px 6px;border-radius:20px;font-weight:700"></span></div>
+  <div class="tab" onclick="switchTab('estoque')"><i class="ti ti-box"></i>Estoque MB52</div>
+  <div class="tab" onclick="switchTab('os-cad')"><i class="ti ti-file-plus"></i>Cadastrar OS</div>
+  <div class="tab" onclick="switchTab('import')"><i class="ti ti-upload"></i>Importar</div>
+</div>
+
+<!-- ══ SIMULADOR ══ -->
+<div id="panel-sim" class="panel active">
+  <div class="metrics">
+    <div class="metric"><div class="metric-val" id="m-abertas">0</div><div class="metric-lbl">OS abertas / andamento</div></div>
+    <div class="metric"><div class="metric-val" id="m-bf" style="color:#0F6E56">0</div><div class="metric-lbl">Movimentos 261 (backflush)</div></div>
+    <div class="metric"><div class="metric-val" id="m-262" style="color:#7C3AED">0</div><div class="metric-lbl">Estornos 262</div></div>
+    <div class="metric"><div class="metric-val" id="m-cogi" style="color:#DC2626">0</div><div class="metric-lbl">Pendentes COGI</div></div>
+  </div>
+  <div class="cols">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+        <span class="card-label" style="margin:0">Ordens de serviço</span>
+        <label style="font-size:11px;color:var(--g600);display:flex;align-items:center;gap:4px;cursor:pointer">
+          <input type="checkbox" id="chk-all" onchange="toggleAllOS(this.checked)" style="accent-color:var(--teal)"> Todas
+        </label>
+      </div>
+      <div class="search-box"><i class="ti ti-search"></i><input id="os-search" placeholder="Buscar OS, contratada..." oninput="renderOSList()"></div>
+      <div id="os-list"><div class="empty">Nenhuma OS cadastrada</div></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Materiais da OS selecionada</div>
+      <div id="mat-panel"><div class="empty">Selecione uma OS</div></div>
+      <div id="estorno-btn-wrap" style="display:none;margin-top:10px">
+        <button class="btn btn-amber btn-sm" onclick="estornar()"><i class="ti ti-arrow-back-up"></i>Estornar OS (Mov. 262)</button>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="section-title">Fluxo de confirmação — SAP PM</div>
+    <div class="flow-steps">
+      <div class="fs" id="fs1">Técnico confirma OS<br>(IW41/App)</div><div class="fs-arr"><i class="ti ti-arrow-right"></i></div>
+      <div class="fs" id="fs2">SAP PM valida OS<br>e componentes</div><div class="fs-arr"><i class="ti ti-arrow-right"></i></div>
+      <div class="fs" id="fs3">Verifica flag<br>BACKFLUSH por mat.</div><div class="fs-arr"><i class="ti ti-arrow-right"></i></div>
+      <div class="fs" id="fs4">Movimento 261<br>baixa automática</div><div class="fs-arr"><i class="ti ti-arrow-right"></i></div>
+      <div class="fs" id="fs5">Estoque MB52<br>atualizado</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-primary" id="btn-ok" disabled onclick="confirmar()"><i class="ti ti-player-play"></i>Confirmar OS</button>
+      <button class="btn" id="btn-rst" onclick="resetSim()"><i class="ti ti-refresh"></i>Reiniciar</button>
+      <span class="flow-status" id="flow-st"></span>
+    </div>
+    <div class="sap-console" id="sap-log"></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;flex-wrap:wrap;gap:8px">
+      <span class="card-label" style="margin:0">Estoque do almoxarifado (MB52)</span>
+      <div class="filter-bar" style="margin:0">
+        <select id="sim-centro-filter" onchange="renderStockSim()" style="max-width:200px">
+          <option value="">Todos os centros</option>
+        </select>
+      </div>
+    </div>
+    <div style="overflow-x:auto"><table class="tbl">
+      <thead><tr><th>Código SAP</th><th>Descrição</th><th>Centro</th><th>UM</th><th style="text-align:right">Estoque Livre</th><th style="text-align:right">Disponível</th><th style="min-width:80px">Nível</th><th>Backflush</th></tr></thead>
+      <tbody id="stock-tb"></tbody>
+    </table></div>
+    <div id="stock-pagination" style="margin-top:8px;display:flex;gap:6px;align-items:center;font-size:12px;color:var(--g400)"></div>
+  </div>
+  <div class="card">
+    <div class="card-label">Log de movimentos SAP</div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#4ADE80"></div>Mov. 261 — backflush automático</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#FCD34D"></div>Saída manual pendente</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#F87171"></div>Falha / saldo insuficiente</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#C084FC"></div>Estorno 262</div>
+    </div>
+    <div id="log-panel" style="margin-top:8px"><div class="empty">Nenhum movimento registrado</div></div>
+  </div>
+</div>
+
+<!-- ══ LOTE ══ -->
+<div id="panel-lote" class="panel">
+  <div class="card">
+    <div class="section-title">Processamento em lote de OS</div>
+
+    <!-- FILTROS -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:10px;padding:10px 12px;background:var(--g50);border-radius:var(--r-md);border:1px solid var(--g200)">
+      <div class="form-group">
+        <label>Centro SAP</label>
+        <select id="lote-f-centro" onchange="renderLote()">
+          <option value="">Todos os centros</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Contratada</label>
+        <select id="lote-f-contratada" onchange="renderLote()">
+          <option value="">Todas as contratadas</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Tipo de serviço</label>
+        <select id="lote-f-tipo" onchange="renderLote()">
+          <option value="">Todos os tipos</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="lote-f-status" onchange="renderLote()">
+          <option value="">Todos</option>
+          <option value="aberta">Aberta</option>
+          <option value="em-andamento">Em andamento</option>
+        </select>
+      </div>
+      <div class="form-group" style="justify-content:flex-end">
+        <label>&nbsp;</label>
+        <button class="btn btn-sm" onclick="limparFiltrosLote()" style="height:36px"><i class="ti ti-x"></i>Limpar filtros</button>
+      </div>
+    </div>
+
+    <!-- BATCH BAR -->
+    <div class="batch-bar" id="batch-bar">
+      <span style="font-size:12px;font-weight:600;color:var(--teal-d)" id="batch-count">0 OS selecionadas</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="processarLote()"><i class="ti ti-player-play"></i>Confirmar lote</button>
+        <button class="btn btn-sm btn-amber" onclick="selecionarTodasFiltradas()"><i class="ti ti-check"></i>Selecionar filtradas</button>
+        <button class="btn btn-sm" onclick="deselectAll()"><i class="ti ti-x"></i>Limpar seleção</button>
+      </div>
+    </div>
+
+    <!-- PROGRESS -->
+    <div id="lote-progress" style="display:none;margin-bottom:10px">
+      <div style="background:var(--g100);border-radius:var(--r-md);overflow:hidden;height:8px;margin-bottom:6px">
+        <div id="lote-bar" style="height:100%;background:var(--teal);width:0%;transition:width .3s"></div>
+      </div>
+      <div style="font-size:11px;color:var(--g400)" id="lote-label">Processando...</div>
+    </div>
+
+    <!-- STATS BAR -->
+    <div id="lote-stats" style="font-size:11px;color:var(--g400);margin-bottom:6px"></div>
+
+    <!-- TABLE -->
+    <div style="overflow-x:auto"><table class="tbl">
+      <thead><tr>
+        <th><input type="checkbox" class="tbl-check" id="lote-chk-all" onchange="toggleLoteAll(this.checked)"></th>
+        <th>Nº OS</th><th>Contratada</th><th>Tipo de Serviço</th><th>Centro</th><th>Status</th><th>Mats.</th><th>Resultado</th>
+      </tr></thead>
+      <tbody id="lote-tb"></tbody>
+    </table></div>
+    <div id="lote-resumo" style="margin-top:1rem;display:none"></div>
+  </div>
+</div>
+
+<!-- ══ COGI ══ -->
+<div id="panel-cogi" class="panel">
+  <div class="card">
+    <div class="section-title">Movimentos com Erro — Fila COGI (MF47)</div>
+    <p style="font-size:12px;color:var(--g600);margin-bottom:1rem">Itens que falharam no backflush por saldo insuficiente. Abasteca o estoque e reprocesse.</p>
+    <div id="cogi-list"><div style="text-align:center;padding:2rem;color:var(--g400)"><i class="ti ti-check-circle" style="font-size:32px;color:#4ADE80;display:block;margin-bottom:8px"></i>Nenhum item pendente na COGI</div></div>
+  </div>
+  <div class="card" id="cogi-stock-card" style="display:none">
+    <div class="section-title">Abastecer estoque para reprocessamento</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Material selecionado</label><input id="cogi-mat-sel" readonly style="background:var(--g50);font-family:monospace;font-size:12px"></div>
+      <div class="form-group"><label>Quantidade a abastecer</label><input id="cogi-qty" type="number" min="1" value="10"></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary btn-sm" onclick="abastecerCOGI()"><i class="ti ti-plus"></i>Abastecer estoque</button>
+      <button class="btn btn-sm" onclick="reprocessarCOGI()"><i class="ti ti-refresh"></i>Reprocessar COGI</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ESTOQUE MB52 ══ -->
+<div id="panel-estoque" class="panel">
+  <div class="mb52-banner">
+    <i class="ti ti-database"></i>
+    <div>
+      <div style="font-size:13px;font-weight:600;color:var(--teal-d);margin-bottom:2px">Base de Estoque SAP — Relatório MB52</div>
+      <div style="font-size:12px;color:var(--g600)" id="mb52-info">Importe a planilha MB52 na aba "Importar" para carregar os dados reais do almoxarifado Sabesp.</div>
+    </div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+      <span class="card-label" style="margin:0">Materiais carregados da MB52</span>
+      <div class="filter-bar" style="margin:0">
+        <select id="centro-filter" onchange="renderEstoqueTable()">
+          <option value="">Todos os centros</option>
+        </select>
+        <select id="grp-filter" onchange="renderEstoqueTable()">
+          <option value="">Todos os grupos</option>
+        </select>
+        <select id="bf-filter" onchange="renderEstoqueTable()">
+          <option value="">Todos</option>
+          <option value="S">Backflush ativo</option>
+          <option value="N">Sem backflush</option>
+        </select>
+        <input id="mat-search" placeholder="Buscar material..." oninput="renderEstoqueTable()" style="width:180px">
+      </div>
+    </div>
+    <div style="overflow-x:auto"><table class="tbl">
+      <thead><tr>
+        <th>Código SAP</th><th>Descrição</th><th>Centro</th><th>Depósito</th><th>Grupo Merc.</th><th>UM</th>
+        <th style="text-align:right">Estoque Livre</th><th style="text-align:right">Valor (R$)</th>
+        <th>Backflush</th><th></th>
+      </tr></thead>
+      <tbody id="estoque-tb"></tbody>
+    </table></div>
+    <div id="estoque-pagination" style="margin-top:8px;display:flex;gap:8px;align-items:center;font-size:12px;color:var(--g400);flex-wrap:wrap"></div>
+  </div>
+</div>
+
+<!-- ══ CADASTRAR OS ══ -->
+<div id="panel-os-cad" class="panel">
+  <div class="card">
+    <div class="section-title">Nova ordem de serviço — Padrão SAP Sabesp</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Número da OS (10 dígitos numéricos — padrão SAP)</label>
+        <input id="nos-id" placeholder="4000123456" maxlength="10" oninput="validateOSNum(this)">
+        <div class="field-hint">Padrão Sabesp: 10 dígitos numéricos (ex: 4000123456)</div>
+        <div class="field-err" id="nos-id-err">Número inválido — use exatamente 10 dígitos numéricos</div>
+      </div>
+      <div class="form-group">
+        <label>Centro SAP</label>
+        <input id="nos-centro" list="list-centros" placeholder="Digite o centro...">
+        <datalist id="list-centros"></datalist>
+        <div class="field-hint">Ex: 0366, OL01, 0420 — conforme cadastro MB52</div>
+      </div>
+      <div class="form-group">
+        <label>Contratada</label>
+        <input id="nos-emp" list="list-contratadas" placeholder="Digite ou selecione...">
+        <datalist id="list-contratadas"></datalist>
+      </div>
+      <div class="form-group">
+        <label>Tipo de serviço</label>
+        <input id="nos-tipo" list="list-tipos" placeholder="Digite ou selecione...">
+        <datalist id="list-tipos"></datalist>
+      </div>
+      <div class="form-group">
+        <label>Status inicial</label>
+        <select id="nos-status">
+          <option value="aberta">Aberta</option>
+          <option value="em-andamento">Em andamento</option>
+        </select>
+      </div>
+    </div>
+    <div class="card-label" style="margin-bottom:.5rem">Materiais da OS — busca no estoque MB52</div>
+    <div id="mat-rows"></div>
+    <button class="btn btn-sm" style="margin-bottom:1rem" onclick="addMatRow()"><i class="ti ti-plus"></i>Adicionar material</button>
+    <div id="os-cad-alert" style="margin-bottom:8px"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary btn-sm" onclick="saveOS()"><i class="ti ti-check"></i>Cadastrar OS</button>
+      <button class="btn btn-sm" onclick="clearOSForm()">Limpar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ IMPORTAR ══ -->
+<div id="panel-import" class="panel">
+  <!-- MB52 -->
+  <div class="card">
+    <div class="section-title"><i class="ti ti-database" style="color:var(--teal);margin-right:6px"></i>Importar base de estoque — Relatório MB52 (SAP)</div>
+    <div class="alert alert-info" style="margin-bottom:1rem"><i class="ti ti-info-circle"></i>
+      <div>Exporte o relatório <strong>MB52</strong> do SAP em formato Excel e importe aqui. O simulador lê as colunas padrão da MB52 automaticamente. A flag de Backflush pode ser definida por grupo de mercadorias após a importação.</div>
+    </div>
+    <div style="overflow-x:auto;margin-bottom:1rem"><table class="tbl">
+      <thead><tr><th>Material</th><th>Centro</th><th>Depósito</th><th>UM básica</th><th>Utilização livre</th><th>Val.utiliz.livre</th><th>Texto breve material</th><th>Grupo de mercadorias</th></tr></thead>
+      <tbody><tr>
+        <td style="font-family:monospace">1300000116</td><td>OL01</td><td>X001</td><td>UN</td><td>50</td><td>342,90</td><td>Luva roscável 3/4"</td><td>029</td>
+      </tr></tbody>
+    </table></div>
+    <label class="import-zone" for="f-mb52" id="dz-mb52">
+      <i class="ti ti-cloud-upload"></i>
+      <div style="font-size:13px;font-weight:500;color:var(--g600);margin-bottom:4px">Arraste o arquivo MB52 aqui ou clique para selecionar</div>
+      <div style="font-size:11px;color:var(--g400)">Aceita .xlsx, .xls e .csv exportados do SAP</div>
+    </label>
+    <input type="file" id="f-mb52" accept=".xlsx,.xls,.csv" onchange="handleMB52(this)">
+    <div id="mb52-bf-config" style="display:none;margin-top:1rem">
+      <div class="section-title" style="margin-bottom:.5rem">Configurar Backflush por grupo de mercadorias</div>
+      <p style="font-size:12px;color:var(--g600);margin-bottom:.75rem">Como a MB52 não inclui o flag de backflush, defina quais grupos de mercadorias têm baixa automática:</p>
+      <div id="grp-bf-list"></div>
+      <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="applyBFConfig()"><i class="ti ti-check"></i>Aplicar configuração de backflush</button>
+    </div>
+    <div id="mb52-result" style="margin-top:12px"></div>
+  </div>
+
+  <!-- OS em lote -->
+  <div class="card">
+    <div class="section-title"><i class="ti ti-file-import" style="color:var(--teal);margin-right:6px"></i>Importar OS em lote</div>
+    <div style="overflow-x:auto;margin-bottom:1rem"><table class="tbl">
+      <thead><tr><th>Col. A — Nº OS (10 dígitos)</th><th>Col. B — Centro SAP</th><th>Col. C — Contratada</th><th>Col. D — Tipo</th><th>Col. E — Status</th><th>Col. F — Materiais</th></tr></thead>
+      <tbody><tr>
+        <td style="font-family:monospace">4000123456</td><td>0366</td><td>Construtora Alpha</td><td>Substituição de rede</td><td>aberta</td>
+        <td style="font-size:11px;font-family:monospace">1300000116:4;1300000355:8</td>
+      </tr></tbody>
+    </table></div>
+    <label class="import-zone" for="f-os" id="dz-os">
+      <i class="ti ti-cloud-upload"></i>
+      <div style="font-size:13px;font-weight:500;color:var(--g600);margin-bottom:4px">Arraste a planilha de OS</div>
+      <div style="font-size:11px;color:var(--g400)">Aceita .xlsx, .xls e .csv</div>
+    </label>
+    <input type="file" id="f-os" accept=".xlsx,.xls,.csv" onchange="handleOSFile(this)">
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn btn-sm" onclick="dlOSTemplate()"><i class="ti ti-download"></i>Baixar planilha modelo de OS</button>
+    </div>
+    <div id="preflight-os" style="margin-top:12px"></div>
+    <div id="import-os-result" style="margin-top:8px"></div>
+  </div>
+</div>
+
+</div><!-- /page -->
+<script>
+// ═══════════════════════════════════════════════════════
+// CONSTANTS — PADRÃO SABESP
+// ═══════════════════════════════════════════════════════
+const CONTRATADAS=['AquaCura Serviços','Desentupidora Norte','HidroTec Engenharia','Saneamento Brasil Ltda','Vales do Saneamento S.A.'];
+const TIPOS=['Conserto de Cavalete','Desobstrução de Rede de Esgoto','Instalação de Hidrômetro','Limpeza de Caixa de Inspeção','Manutenção de Ramal de Água','Prolongamento de Rede de Esgoto','Reparo de Vazamento de Água','Substituição de Registro'];
+const UNID_DECIMAL=['M','M2','M3','KG','L'];
+// Grupos de mercadoria com backflush sugerido (editável pelo usuário)
+let BF_GRUPOS=new Set(['004','005','007','008','009','029']);
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let MATS=[];        // {id, nome, centro, deposito, unid, grupo, stock, reservado, bf, valUnit}
+let stockState={};  // {matId_centro: {s, r}}
+let OS_LIST=[];
+let simLogs=[],simBF=0,sim262=0,selOS=null,running=false;
+let cogiItems=[],selectedLote=new Set();
+let mb52Loaded=false;
+let estoquePageSize=50,estoquePage=0,stockSimPage=0;
+
+// ═══════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════
+const getMat=id=>MATS.find(m=>m.id===id);
+const getMatCentro=(id,centro)=>MATS.find(m=>m.id===id&&m.centro===centro)||getMat(id);
+const getOS=id=>OS_LIST.find(o=>o.id===id);
+const sLabel=s=>({aberta:'Aberta','em-andamento':'Em andamento',confirmada:'Confirmada',cancelada:'Cancelada'}[s]||s);
+const sCls=s=>({aberta:'badge-aberta','em-andamento':'badge-em-andamento',confirmada:'badge-confirmada',cancelada:'badge-cancelada'}[s]||'');
+const isDecimal=u=>UNID_DECIMAL.includes((u||'').toUpperCase());
+const fmtQty=(q,u)=>isDecimal(u)?parseFloat(q).toFixed(2):parseInt(q);
+const fmtBRL=v=>v==null?'—':'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const now=()=>new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+const stKey=(id,centro)=>id+(centro?'_'+centro:'');
+
+function stockOf(id,centro){
+  const k=stKey(id,centro);
+  if(stockState[k]) return stockState[k];
+  // fallback: any centro
+  const k2=Object.keys(stockState).find(kk=>kk.startsWith(id+'_')||kk===id);
+  return stockState[k2]||{s:0,r:0};
+}
+
+function toast(msg,type='ok'){
+  const el=document.getElementById('toast');
+  el.className=`toast toast-${type}`;
+  el.innerHTML=`<i class="ti ti-${type==='ok'?'check':type==='err'?'x':'alert-triangle'}"></i>${msg}`;
+  el.style.display='flex';
+  clearTimeout(el._t);
+  el._t=setTimeout(()=>el.style.display='none',3500);
+}
+
+// ═══════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════
+function switchTab(name){
+  const names=['sim','lote','cogi','estoque','os-cad','import'];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.className='tab'+(names[i]===name?' active':''));
+  document.querySelectorAll('.panel').forEach(p=>p.className='panel');
+  document.getElementById('panel-'+name).className='panel active';
+  if(name==='sim'){renderOSList();renderStockSim();renderLogs();updateMetrics();}
+  if(name==='lote') renderLote();
+  if(name==='cogi') renderCOGI();
+  if(name==='estoque') renderEstoqueTable();
+  if(name==='os-cad'){populateDataLists();if(!document.getElementById('mat-rows').children.length)addMatRow();}
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER SIMULADOR
+// ═══════════════════════════════════════════════════════
+function renderOSList(){
+  const el=document.getElementById('os-list');
+  const q=(document.getElementById('os-search').value||'').toLowerCase();
+  const list=OS_LIST.filter(o=>!q||o.id.includes(q)||o.emp.toLowerCase().includes(q)||o.tipo.toLowerCase().includes(q)||(o.centro||'').includes(q));
+  if(!list.length){el.innerHTML=`<div class="empty">${OS_LIST.length?'Nenhuma OS encontrada':'Nenhuma OS cadastrada'}</div>`;return;}
+  el.innerHTML='';
+  list.forEach(os=>{
+    const d=document.createElement('div');
+    d.className='os-row'+(selOS===os.id?' selected':'');
+    d.innerHTML=`<input type="checkbox" class="tbl-check os-chk" data-id="${os.id}" ${os.status==='confirmada'||os.status==='cancelada'?'disabled':''} onchange="onOSChk(this)" style="accent-color:var(--teal)">
+      <span class="os-badge ${sCls(os.status)}">${sLabel(os.status)}</span>
+      <div class="os-info" onclick="selectOS('${os.id}')" style="cursor:pointer">
+        <div class="os-id">${os.id} ${os.centro?`<span class="centro-badge">${os.centro}</span>`:''}</div>
+        <div class="os-sub">${os.emp} · ${os.tipo}</div>
+      </div>`;
+    el.appendChild(d);
+  });
+}
+
+function onOSChk(chk){if(chk.checked)selectOS(chk.dataset.id);}
+function toggleAllOS(chk){document.querySelectorAll('.os-chk:not(:disabled)').forEach(c=>c.checked=chk);}
+
+function renderMatPanel(){
+  const el=document.getElementById('mat-panel');
+  const estWrap=document.getElementById('estorno-btn-wrap');
+  if(!selOS){el.innerHTML='<div class="empty">Selecione uma OS</div>';estWrap.style.display='none';return;}
+  const os=getOS(selOS);
+  if(!os){el.innerHTML='<div class="empty">OS não encontrada</div>';estWrap.style.display='none';return;}
+  let html=`<div style="font-size:11px;color:var(--g600);margin-bottom:8px">${os.emp}${os.centro?' · Centro: <strong>'+os.centro+'</strong>':''}</div>
+    <table class="tbl"><thead><tr><th>Código SAP</th><th>Descrição</th><th style="text-align:right">Qtd</th><th style="text-align:right">Disp.</th><th>Tipo</th></tr></thead><tbody>`;
+  os.mats.forEach(item=>{
+    const mat=getMat(item.id);
+    if(!mat){html+=`<tr><td colspan="5"><span class="tag tag-err">${item.id} — não encontrado na MB52</span></td></tr>`;return;}
+    const st=stockOf(item.id,os.centro);
+    const av=st.s-st.r;const ok=av>=item.q;
+    html+=`<tr><td style="font-family:monospace;font-size:11px;font-weight:600">${mat.id}</td><td style="font-size:11px">${mat.nome}</td>
+      <td style="text-align:right;font-weight:600">${fmtQty(item.q,mat.unid)} ${mat.unid}</td>
+      <td style="text-align:right;font-weight:600;color:${ok?'#0F6E56':'#DC2626'}">${av}</td>
+      <td>${mat.bf?'<span class="tag tag-auto">Backflush</span>':'<span class="tag tag-manual">Manual</span>'}</td></tr>`;
+  });
+  html+='</tbody></table>';
+  el.innerHTML=html;
+  estWrap.style.display=os.status==='confirmada'?'block':'none';
+}
+
+function renderStockSim(){
+  const filter=document.getElementById('sim-centro-filter').value;
+  const tb=document.getElementById('stock-tb');
+  let mats=MATS.filter(m=>!filter||m.centro===filter);
+  // pagination
+  const start=stockSimPage*20,end=start+20;
+  const page=mats.slice(start,end);
+  tb.innerHTML='';
+  if(!mats.length){tb.innerHTML='<tr><td colspan="8" class="empty">Nenhum material carregado. Importe a MB52.</td></tr>';return;}
+  page.forEach(mat=>{
+    const st=stockOf(mat.id,mat.centro);
+    const av=st.s-st.r;
+    const pct=Math.round(Math.max(0,Math.min(100,(av/Math.max(mat.stock,1))*100)));
+    const cls=pct<20?'bar-low':pct<50?'bar-mid':'bar-ok';
+    const avC=pct<20?'#DC2626':pct<50?'#BA7517':'#0F6E56';
+    tb.innerHTML+=`<tr>
+      <td style="font-family:monospace;font-size:11px;font-weight:700">${mat.id}</td>
+      <td style="font-size:11px">${mat.nome}</td>
+      <td><span class="centro-badge">${mat.centro}</span></td>
+      <td>${mat.unid}</td>
+      <td style="text-align:right;font-weight:600">${st.s}</td>
+      <td style="text-align:right;font-weight:600;color:${avC}">${av}</td>
+      <td><div class="bar-track"><div class="bar-fill ${cls}" style="width:${pct}%"></div></div></td>
+      <td>${mat.bf?'<span class="tag tag-auto">Sim</span>':'<span class="tag tag-manual">Não</span>'}</td>
+    </tr>`;
+  });
+  const pg=document.getElementById('stock-pagination');
+  const total=mats.length,pages=Math.ceil(total/20);
+  pg.innerHTML=total>20?`
+    <button class="btn btn-sm" onclick="stockSimPage=Math.max(0,stockSimPage-1);renderStockSim()" ${stockSimPage===0?'disabled':''}>‹</button>
+    <span>Pág. ${stockSimPage+1} / ${pages} (${total} materiais)</span>
+    <button class="btn btn-sm" onclick="stockSimPage=Math.min(${pages-1},stockSimPage+1);renderStockSim()" ${stockSimPage>=pages-1?'disabled':''}>›</button>`:'';
+}
+
+function renderLogs(){
+  const el=document.getElementById('log-panel');
+  if(!simLogs.length){el.innerHTML='<div class="empty">Nenhum movimento registrado</div>';return;}
+  el.innerHTML='';
+  const icons={ok:'check',warn:'alert-triangle',err:'x-circle',info:'info-circle','262':'arrow-back-up'};
+  [...simLogs].reverse().forEach(l=>{
+    const d=document.createElement('div');
+    d.className=`log-item log-${l.type}`;
+    d.innerHTML=`<i class="ti ti-${icons[l.type]||'info-circle'}"></i><span class="log-time">${l.time}</span><span>${l.msg}</span>`;
+    el.appendChild(d);
+  });
+}
+
+function updateMetrics(){
+  document.getElementById('m-abertas').textContent=OS_LIST.filter(o=>o.status==='aberta'||o.status==='em-andamento').length;
+  document.getElementById('m-bf').textContent=simBF;
+  document.getElementById('m-262').textContent=sim262;
+  document.getElementById('m-cogi').textContent=cogiItems.length;
+  const b=document.getElementById('cogi-badge');
+  b.textContent=cogiItems.length;b.style.display=cogiItems.length?'inline':'none';
+  document.getElementById('mat-count-badge').textContent=MATS.length+' materiais';
+}
+
+function selectOS(id){
+  selOS=id;renderOSList();renderMatPanel();
+  const os=getOS(id);
+  const can=os&&(os.status==='aberta'||os.status==='em-andamento');
+  document.getElementById('btn-ok').disabled=!can||running;
+  document.getElementById('flow-st').textContent=can?'OS pronta para confirmação':os?.status==='confirmada'?'OS já confirmada':'';
+  document.getElementById('sap-log').style.display='none';
+  for(let i=1;i<=5;i++)document.getElementById('fs'+i).className='fs';
+}
+
+// ═══════════════════════════════════════════════════════
+// FLOW
+// ═══════════════════════════════════════════════════════
+function addLog(type,msg){simLogs.push({type,msg,time:now()});renderLogs();}
+function setFlow(step,cls){for(let i=1;i<=5;i++)document.getElementById('fs'+i).className='fs'+(i===step?' '+cls:(i<step&&cls!=='error')?' done':'');}
+function sapConsole(lines){const el=document.getElementById('sap-log');el.style.display='block';el.innerHTML=lines.map(l=>`<span class="${l.c||''}">${l.t}</span>`).join('\n');}
+
+async function confirmar(){
+  const os=getOS(selOS);
+  if(!os||(os.status!=='aberta'&&os.status!=='em-andamento'))return;
+  running=true;
+  document.getElementById('btn-ok').disabled=true;
+  document.getElementById('btn-rst').disabled=true;
+  document.getElementById('flow-st').textContent='Processando...';
+  setFlow(1,'active');addLog('info',`Técnico confirma OS ${os.id} via app · Centro: ${os.centro||'—'} · ${os.emp}`);await sleep(700);
+  setFlow(2,'active');addLog('info','SAP PM recebe sinal de confirmação · Transação IW41 acionada');await sleep(600);
+  setFlow(3,'active');addLog('info','Verificando flag BACKFLUSH por grupo de mercadorias...');await sleep(800);
+  const{lines,hasErr}=buildSAPLines(os);
+  sapConsole(lines);await sleep(800);
+  setFlow(4,'active');
+  processBackflush(os);
+  await sleep(600);
+  setFlow(5,hasErr?'error':'active');
+  document.getElementById('flow-st').textContent=hasErr?'⚠ Concluído com divergências — verifique COGI':'✓ Backflush concluído — estoque MB52 atualizado';
+  if(!hasErr)addLog('ok',`OS ${os.id} confirmada — estoque atualizado via backflush`);
+  else addLog('err','Verificar fila COGI (MF47) — itens com saldo insuficiente');
+  os.status='confirmada';
+  renderOSList();renderMatPanel();renderStockSim();updateMetrics();
+  running=false;document.getElementById('btn-rst').disabled=false;document.getElementById('btn-ok').disabled=true;
+  toast(hasErr?'OS confirmada com divergências — ver COGI':'OS confirmada com sucesso!',hasErr?'warn':'ok');
+}
+
+function buildSAPLines(os){
+  const bfItems=os.mats.filter(i=>{const m=getMat(i.id);return m&&m.bf;});
+  const manItems=os.mats.filter(i=>{const m=getMat(i.id);return m&&!m.bf;});
+  const missItems=os.mats.filter(i=>!getMat(i.id));
+  let hasErr=false;
+  const lines=[
+    {t:`╔══ SAP PM · Sabesp — Confirmação OS ═══════════════╗`,c:'sap-head'},
+    {t:`  OS: ${os.id}   Centro: ${os.centro||'N/D'}   Contratada: ${os.emp}`},
+    {t:`  Tipo: ${os.tipo}   Data: ${new Date().toLocaleDateString('pt-BR')}   ${now()}`},
+    {t:`╠═══════════════════════════════════════════════════╣`,c:'sap-head'},
+    {t:`  Componentes com BACKFLUSH ativo (Grupo Merc. BF):`,c:'sap-head'},
+  ];
+  bfItems.forEach(item=>{
+    const mat=getMat(item.id);const st=stockOf(item.id,os.centro);const av=st.s-st.r;
+    if(av<item.q){
+      hasErr=true;
+      lines.push({t:`  ✗ ${mat.id} ${mat.nome.substring(0,20).padEnd(20)}  Qtd:${String(item.q).padStart(5)}  Disp:${String(av).padStart(5)}  ← SALDO INSUF.`,c:'sap-err'});
+    } else {
+      lines.push({t:`  ✓ ${mat.id} ${mat.nome.substring(0,20).padEnd(20)}  Mvt 261  -${fmtQty(item.q,mat.unid)} ${(mat.unid||'').padEnd(4)}  Grp:${mat.grupo||'?'}`,c:'sap-ok'});
+    }
+  });
+  if(manItems.length){lines.push({t:`  Saída manual pendente (sem backflush no grupo):`,c:'sap-warn'});manItems.forEach(i=>{const m=getMat(i.id);lines.push({t:`  - ${m.id} ${m.nome.substring(0,20)} → MI01 manual  Grp:${m.grupo||'?'}`,c:'sap-warn'});});}
+  if(missItems.length){lines.push({t:`  SKUs não encontrados na base MB52:`,c:'sap-err'});missItems.forEach(i=>lines.push({t:`  ! ${i.id} — verificar MM03`,c:'sap-err'}));}
+  lines.push({t:`╚═══════════════════════════════════════════════════╝`,c:'sap-head'});
+  return{lines,hasErr};
+}
+
+function processBackflush(os){
+  const bfItems=os.mats.filter(i=>{const m=getMat(i.id);return m&&m.bf;});
+  const manItems=os.mats.filter(i=>{const m=getMat(i.id);return m&&!m.bf;});
+  bfItems.forEach(item=>{
+    const mat=getMat(item.id);const k=stKey(item.id,os.centro)||stKey(item.id,'');
+    const st=stockState[k]||stockOf(item.id,os.centro);
+    const av=st.s-st.r;
+    if(av>=item.q){
+      stockState[k]=stockState[k]||{s:st.s,r:st.r};
+      stockState[k].s-=item.q;simBF++;
+      addLog('ok',`Mvt 261 · ${mat.id} · ${mat.nome.substring(0,25)} · -${fmtQty(item.q,mat.unid)} ${mat.unid} · Centro: ${os.centro||'—'}`);
+    } else {
+      cogiItems.push({osId:os.id,matId:item.id,centro:os.centro,qtd:item.q,motivo:`Saldo insuficiente: necessário ${fmtQty(item.q,mat.unid)}, disponível ${av}`});
+      addLog('err',`COGI · ${mat.id} · ${mat.nome.substring(0,25)} · saldo insuficiente (${av} < ${item.q})`);
+    }
+  });
+  if(manItems.length)addLog('warn',`${manItems.length} material(is) sem backflush — saída manual necessária (MI01)`);
+}
+
+// ═══════════════════════════════════════════════════════
+// ESTORNO 262
+// ═══════════════════════════════════════════════════════
+function estornar(){
+  const os=getOS(selOS);
+  if(!os||os.status!=='confirmada')return;
+  if(!confirm(`Confirmar estorno da OS ${os.id}?\nOs materiais serão devolvidos ao estoque (Movimento 262).`))return;
+  const lines=[
+    {t:`╔══ SAP PM · Sabesp — Estorno OS (Mov. 262) ════════╗`,c:'sap-262'},
+    {t:`  OS: ${os.id}   Centro: ${os.centro||'N/D'}   Data: ${new Date().toLocaleDateString('pt-BR')}   ${now()}`},
+    {t:`╠═══════════════════════════════════════════════════╣`,c:'sap-262'},
+  ];
+  os.mats.forEach(item=>{
+    const mat=getMat(item.id);if(!mat||!mat.bf)return;
+    const k=stKey(item.id,os.centro);
+    if(!stockState[k])stockState[k]={s:mat.stock,r:mat.reservado||0};
+    stockState[k].s+=item.q;sim262++;
+    lines.push({t:`  ↩ ${mat.id} ${mat.nome.substring(0,20).padEnd(20)}  Mvt 262  +${fmtQty(item.q,mat.unid)} ${mat.unid}  [ESTORNO]`,c:'sap-262'});
+    addLog('262',`Mvt 262 (estorno) · ${mat.id} · ${mat.nome.substring(0,25)} · +${fmtQty(item.q,mat.unid)} ${mat.unid}`);
+  });
+  lines.push({t:`╚═══════════════════════════════════════════════════╝`,c:'sap-262'});
+  sapConsole(lines);
+  os.status='aberta';
+  addLog('262',`OS ${os.id} estornada — status revertido para Aberta`);
+  renderOSList();renderMatPanel();renderStockSim();updateMetrics();
+  toast('Estorno (Mov. 262) realizado com sucesso','ok');
+}
+
+function resetSim(){
+  selOS=null;simBF=0;sim262=0;simLogs=[];running=false;cogiItems=[];
+  OS_LIST.forEach(o=>{if(o._origStatus)o.status=o._origStatus;});
+  // restore stock from MATS
+  stockState={};
+  MATS.forEach(m=>{stockState[stKey(m.id,m.centro)]={s:m.stock,r:m.reservado||0};});
+  document.getElementById('btn-ok').disabled=true;
+  document.getElementById('flow-st').textContent='';
+  document.getElementById('sap-log').style.display='none';
+  for(let i=1;i<=5;i++)document.getElementById('fs'+i).className='fs';
+  renderOSList();renderMatPanel();renderStockSim();renderLogs();updateMetrics();
+  toast('Simulação reiniciada','ok');
+}
+
+// ═══════════════════════════════════════════════════════
+// LOTE
+// ═══════════════════════════════════════════════════════
+function getLoteFiltradas(){
+  const fc=document.getElementById('lote-f-centro')?.value||'';
+  const fe=document.getElementById('lote-f-contratada')?.value||'';
+  const ft=document.getElementById('lote-f-tipo')?.value||'';
+  const fs=document.getElementById('lote-f-status')?.value||'';
+  return OS_LIST.filter(o=>
+    (o.status==='aberta'||o.status==='em-andamento')&&
+    (!fc||o.centro===fc)&&
+    (!fe||o.emp===fe)&&
+    (!ft||o.tipo===ft)&&
+    (!fs||o.status===fs)
+  );
+}
+
+function populateLoteFilters(){
+  const open=OS_LIST.filter(o=>o.status==='aberta'||o.status==='em-andamento');
+  const centros=[...new Set(open.map(o=>o.centro).filter(Boolean))].sort();
+  const contrat=[...new Set(open.map(o=>o.emp).filter(Boolean))].sort();
+  const tipos=[...new Set(open.map(o=>o.tipo).filter(Boolean))].sort();
+
+  const fc=document.getElementById('lote-f-centro');
+  const fv=fc?.value||'';
+  if(fc){fc.innerHTML='<option value="">Todos os centros</option>';centros.forEach(c=>fc.innerHTML+=`<option value="${c}" ${c===fv?'selected':''}>${c}</option>`);}
+
+  const fe=document.getElementById('lote-f-contratada');
+  const ev=fe?.value||'';
+  if(fe){fe.innerHTML='<option value="">Todas as contratadas</option>';contrat.forEach(c=>fe.innerHTML+=`<option value="${c}" ${c===ev?'selected':''}>${c}</option>`);}
+
+  const ft=document.getElementById('lote-f-tipo');
+  const tv=ft?.value||'';
+  if(ft){ft.innerHTML='<option value="">Todos os tipos</option>';tipos.forEach(t=>ft.innerHTML+=`<option value="${t}" ${t===tv?'selected':''}>${t}</option>`);}
+}
+
+function renderLote(){
+  populateLoteFilters();
+  const tb=document.getElementById('lote-tb');
+  const list=getLoteFiltradas();
+  const allOpen=OS_LIST.filter(o=>o.status==='aberta'||o.status==='em-andamento');
+
+  // stats bar
+  const stats=document.getElementById('lote-stats');
+  if(stats) stats.textContent=`Exibindo ${list.length} de ${allOpen.length} OS abertas/em andamento`;
+
+  if(!list.length){tb.innerHTML=`<tr><td colspan="8" class="empty">${allOpen.length?'Nenhuma OS encontrada com os filtros aplicados':'Nenhuma OS aberta'}</td></tr>`;updateLoteBatchBar();return;}
+  tb.innerHTML='';
+  list.forEach(os=>{
+    const prev=os._loteResult||'';
+    tb.innerHTML+=`<tr id="lote-row-${os.id}">
+      <td><input type="checkbox" class="tbl-check lote-chk" data-id="${os.id}" ${selectedLote.has(os.id)?'checked':''} onchange="updateLoteSel(this)"></td>
+      <td style="font-family:monospace;font-size:11px;font-weight:600">${os.id}</td>
+      <td style="font-size:11px">${os.emp}</td>
+      <td style="font-size:11px">${os.tipo}</td>
+      <td>${os.centro?`<span class="centro-badge">${os.centro}</span>`:'—'}</td>
+      <td><span class="os-badge ${sCls(os.status)}">${sLabel(os.status)}</span></td>
+      <td style="text-align:center">${os.mats.length}</td>
+      <td id="lote-result-${os.id}">${prev||'—'}</td>
+    </tr>`;
+  });
+  updateLoteBatchBar();
+}
+
+function selecionarTodasFiltradas(){
+  const list=getLoteFiltradas();
+  list.forEach(os=>selectedLote.add(os.id));
+  renderLote();
+  toast(`${list.length} OS selecionadas`,'ok');
+}
+
+function limparFiltrosLote(){
+  ['lote-f-centro','lote-f-contratada','lote-f-tipo','lote-f-status'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  renderLote();
+}
+
+function updateLoteSel(chk){const id=chk.dataset.id;if(chk.checked)selectedLote.add(id);else selectedLote.delete(id);updateLoteBatchBar();}
+function toggleLoteAll(chk){document.querySelectorAll('.lote-chk').forEach(c=>{c.checked=chk;updateLoteSel(c);});}
+function updateLoteBatchBar(){const n=selectedLote.size;document.getElementById('batch-bar').className='batch-bar'+(n>0?' visible':'');document.getElementById('batch-count').textContent=`${n} OS selecionada${n!==1?'s':''}`;}
+function deselectAll(){selectedLote.clear();renderLote();}
+
+async function processarLote(){
+  const ids=[...selectedLote];if(!ids.length){toast('Selecione pelo menos uma OS','warn');return;}
+  const prog=document.getElementById('lote-progress');prog.style.display='block';
+  let ok=0,err=0;
+  for(let i=0;i<ids.length;i++){
+    const os=getOS(ids[i]);if(!os||os.status==='confirmada')continue;
+    document.getElementById('lote-label').textContent=`Processando ${i+1}/${ids.length}: OS ${os.id}`;
+    document.getElementById('lote-bar').style.width=`${Math.round((i/ids.length)*100)}%`;
+    await sleep(350);
+    const{hasErr}=buildSAPLines(os);
+    processBackflush(os);os.status='confirmada';
+    const r=document.getElementById(`lote-result-${os.id}`);
+    if(r)r.innerHTML=hasErr?'<span class="tag tag-warn">Parcial — COGI</span>':'<span class="tag tag-ok">✓ Confirmada</span>';
+    hasErr?err++:ok++;selectedLote.delete(ids[i]);
+  }
+  document.getElementById('lote-bar').style.width='100%';
+  document.getElementById('lote-label').textContent=`Concluído: ${ok} OK, ${err} com divergências`;
+  document.getElementById('lote-resumo').style.display='block';
+  document.getElementById('lote-resumo').innerHTML=`<div class="alert ${err?'alert-warn':'alert-ok'}"><i class="ti ti-${err?'alert-triangle':'check'}"></i><div><strong>Lote processado:</strong> ${ok} OS confirmada${ok!==1?'s':''} com sucesso${err?`, ${err} com divergências — verifique a aba COGI`:''}.</div></div>`;
+  updateMetrics();toast(`Lote: ${ok} OK, ${err} com erros`,err?'warn':'ok');
+  setTimeout(()=>{prog.style.display='none';renderLote();},2000);
+}
+
+// ═══════════════════════════════════════════════════════
+// COGI
+// ═══════════════════════════════════════════════════════
+function renderCOGI(){
+  const el=document.getElementById('cogi-list');
+  const sc=document.getElementById('cogi-stock-card');
+  if(!cogiItems.length){el.innerHTML='<div style="text-align:center;padding:2rem;color:var(--g400)"><i class="ti ti-check-circle" style="font-size:32px;color:#4ADE80;display:block;margin-bottom:8px"></i>Nenhum item pendente na COGI</div>';sc.style.display='none';return;}
+  sc.style.display='block';el.innerHTML='';
+  cogiItems.forEach((c,i)=>{
+    const mat=getMat(c.matId);const st=stockOf(c.matId,c.centro);const av=st.s-st.r;
+    const div=document.createElement('div');div.className='cogi-row';
+    div.innerHTML=`
+      <div><div style="font-weight:600;font-size:12px">${mat?mat.nome:'Desconhecido'} <span style="font-family:monospace;font-size:10px;color:var(--g400)">(${c.matId})</span></div>
+        <div style="font-size:11px;color:var(--g400)">OS: ${c.osId}${c.centro?' · Centro: '+c.centro:''} · ${c.motivo}</div></div>
+      <div><span class="tag tag-cogi">Necessário: ${fmtQty(c.qtd,mat?.unid||'UN')}</span></div>
+      <div style="font-size:11px">Disp: <strong style="color:${av<c.qtd?'#DC2626':'#0F6E56'}">${av}</strong></div>
+      <button class="btn btn-sm btn-amber" onclick="selecionarCOGI(${i})"><i class="ti ti-tool"></i>Tratar</button>`;
+    el.appendChild(div);
+  });
+  if(cogiItems[0]){const c=cogiItems[0];const mat=getMat(c.matId);document.getElementById('cogi-mat-sel').value=`${c.matId}${mat?' — '+mat.nome.substring(0,25):''}`;document.getElementById('cogi-mat-sel')._idx=0;}
+}
+
+function selecionarCOGI(idx){
+  const c=cogiItems[idx];const mat=getMat(c.matId);
+  document.getElementById('cogi-mat-sel').value=`${c.matId}${mat?' — '+mat.nome.substring(0,25):''}`;
+  document.getElementById('cogi-mat-sel')._idx=idx;
+  const st=stockOf(c.matId,c.centro);const av=st.s-st.r;
+  document.getElementById('cogi-qty').value=Math.max(c.qtd-av,1);
+}
+
+function abastecerCOGI(){
+  const idx=document.getElementById('cogi-mat-sel')._idx||0;
+  const c=cogiItems[idx];if(!c)return;
+  const qty=parseInt(document.getElementById('cogi-qty').value)||0;
+  if(qty<=0){toast('Informe uma quantidade válida','warn');return;}
+  const k=stKey(c.matId,c.centro);
+  if(!stockState[k])stockState[k]={s:0,r:0};
+  stockState[k].s+=qty;
+  addLog('info',`COGI: estoque abastecido · ${c.matId} · +${qty} un`);
+  toast(`Estoque abastecido: +${qty}`,'ok');
+  renderCOGI();renderStockSim();updateMetrics();
+}
+
+function reprocessarCOGI(){
+  const idx=document.getElementById('cogi-mat-sel')._idx||0;
+  const c=cogiItems[idx];if(!c)return;
+  const mat=getMat(c.matId);const st=stockOf(c.matId,c.centro);const av=st.s-st.r;
+  if(av<c.qtd){toast(`Saldo ainda insuficiente: disponível ${av}, necessário ${c.qtd}`,'err');return;}
+  const k=stKey(c.matId,c.centro);
+  stockState[k].s-=c.qtd;simBF++;
+  addLog('ok',`COGI reprocessado · Mvt 261 · ${mat?.nome||c.matId} · -${fmtQty(c.qtd,mat?.unid||'UN')}`);
+  cogiItems.splice(idx,1);
+  toast('COGI reprocessado com sucesso!','ok');
+  renderCOGI();renderStockSim();updateMetrics();
+}
+
+// ═══════════════════════════════════════════════════════
+// ESTOQUE MB52 TABLE
+// ═══════════════════════════════════════════════════════
+function renderEstoqueTable(){
+  const centroF=document.getElementById('centro-filter').value;
+  const grpF=document.getElementById('grp-filter').value;
+  const bfF=document.getElementById('bf-filter').value;
+  const q=(document.getElementById('mat-search').value||'').toLowerCase();
+  let list=MATS.filter(m=>
+    (!centroF||m.centro===centroF)&&
+    (!grpF||m.grupo===grpF)&&
+    (!bfF||(bfF==='S'&&m.bf)||(bfF==='N'&&!m.bf))&&
+    (!q||m.id.includes(q)||m.nome.toLowerCase().includes(q)||(m.centro||'').toLowerCase().includes(q))
+  );
+  const tb=document.getElementById('estoque-tb');
+  const start=estoquePage*estoquePageSize,end=start+estoquePageSize;
+  const page=list.slice(start,end);
+  tb.innerHTML='';
+  if(!list.length){tb.innerHTML='<tr><td colspan="10" class="empty">Nenhum material encontrado</td></tr>';return;}
+  page.forEach((mat,idx)=>{
+    const st=stockOf(mat.id,mat.centro);const av=st.s-st.r;
+    tb.innerHTML+=`<tr>
+      <td style="font-family:monospace;font-size:11px;font-weight:700">${mat.id}</td>
+      <td style="font-size:11px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${mat.nome}">${mat.nome}</td>
+      <td><span class="centro-badge">${mat.centro}</span></td>
+      <td style="font-size:11px;color:var(--g400)">${mat.deposito||'—'}</td>
+      <td style="font-size:11px">${mat.grupo||'—'}</td>
+      <td>${mat.unid}</td>
+      <td style="text-align:right;font-weight:600">${av}</td>
+      <td style="text-align:right;font-size:11px;color:var(--g400)">${fmtBRL(mat.valUnit)}</td>
+      <td>
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px">
+          <input type="checkbox" ${mat.bf?'checked':''} onchange="toggleMatBF('${mat.id}','${mat.centro}',this.checked)" style="accent-color:var(--teal)">
+          ${mat.bf?'<span class="tag tag-auto">Sim</span>':'<span class="tag tag-manual">Não</span>'}
+        </label>
+      </td>
+      <td><button class="btn btn-sm" onclick="editMatStock('${mat.id}','${mat.centro}')" title="Editar estoque"><i class="ti ti-edit" style="font-size:12px"></i></button></td>
+    </tr>`;
+  });
+  // pagination
+  const pages=Math.ceil(list.length/estoquePageSize);
+  const pg=document.getElementById('estoque-pagination');
+  pg.innerHTML=`<span>Exibindo ${start+1}–${Math.min(end,list.length)} de ${list.length} registros</span>`;
+  if(pages>1){
+    pg.innerHTML+=` &nbsp; <button class="btn btn-sm" onclick="estoquePage=Math.max(0,estoquePage-1);renderEstoqueTable()" ${estoquePage===0?'disabled':''}>‹ Anterior</button>
+    <span>Pág. ${estoquePage+1}/${pages}</span>
+    <button class="btn btn-sm" onclick="estoquePage=Math.min(${pages-1},estoquePage+1);renderEstoqueTable()" ${estoquePage>=pages-1?'disabled':''}>Próxima ›</button>`;
+  }
+}
+
+function toggleMatBF(id,centro,val){
+  const mat=MATS.find(m=>m.id===id&&m.centro===centro);
+  if(mat){mat.bf=val;renderEstoqueTable();}
+}
+
+function editMatStock(id,centro){
+  const mat=MATS.find(m=>m.id===id&&m.centro===centro);if(!mat)return;
+  const novo=prompt(`Estoque livre atual: ${mat.stock}\nInforme o novo valor de estoque para:\n${mat.id} — ${mat.nome}\nCentro: ${centro}`,mat.stock);
+  if(novo===null)return;
+  const v=parseFloat(novo);if(isNaN(v)||v<0){alert('Valor inválido');return;}
+  mat.stock=v;
+  const k=stKey(id,centro);
+  if(!stockState[k])stockState[k]={s:v,r:0};
+  else stockState[k].s=v;
+  renderEstoqueTable();renderStockSim();toast(`Estoque atualizado: ${id} → ${v}`,'ok');
+}
+
+// ═══════════════════════════════════════════════════════
+// IMPORTAR MB52
+// ═══════════════════════════════════════════════════════
+function handleMB52(input){if(input.files[0])processMB52(input.files[0]);}
+
+function processMB52(file){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
+    // detect header row
+    let headerRow=0;
+    for(let i=0;i<Math.min(5,rows.length);i++){
+      if(rows[i].some(v=>String(v).toLowerCase().includes('material')||String(v).toLowerCase().includes('texto breve'))){headerRow=i;break;}
+    }
+    const hdr=rows[headerRow].map(v=>String(v||'').trim());
+    const ci=name=>hdr.findIndex(h=>h.toLowerCase().includes(name.toLowerCase()));
+    const iMat=ci('Material'),iCentro=ci('Centro'),iDep=ci('Depósito'),iUM=ci('UM'),
+          iLivre=ci('Utilização livre')||ci('livre'),iVal=ci('Val.utiliz'),
+          iDesc=ci('Texto breve'),iGrp=ci('Grupo de mercadorias')||ci('mercadorias');
+
+    if(iMat<0||iDesc<0){
+      document.getElementById('mb52-result').innerHTML='<div class="alert alert-err"><i class="ti ti-x-circle"></i>Não foi possível identificar as colunas da MB52. Verifique se o arquivo é um relatório MB52 exportado do SAP.</div>';
+      return;
+    }
+
+    MATS=[];stockState={};
+    let added=0,skip=0;
+    for(let r=headerRow+1;r<rows.length;r++){
+      const row=rows[r];
+      const matRaw=String(row[iMat]||'').trim();
+      if(!matRaw||isNaN(Number(matRaw)))continue;
+      const id=matRaw.padStart(10,'0');
+      const centro=String(row[iCentro]||'').trim();
+      const deposito=String(iDep>=0?row[iDep]:'').trim();
+      const unid=String(iUM>=0?row[iUM]:'UN').trim()||'UN';
+      const livre=parseFloat(row[iLivre])||0;
+      const val=parseFloat(row[iVal])||0;
+      const nome=String(row[iDesc]||'').trim();
+      const grupo=String(iGrp>=0?row[iGrp]:'').trim();
+      const bf=BF_GRUPOS.has(grupo);
+      const valUnit=livre>0?val/livre:0;
+
+      MATS.push({id,nome,centro,deposito,unid,grupo,stock:livre,reservado:0,bf,valUnit});
+      stockState[stKey(id,centro)]={s:livre,r:0};
+      added++;
+    }
+
+    mb52Loaded=true;
+    populateCentroFilters();
+    populateGrpFilters();
+    populateBFConfig();
+    document.getElementById('mb52-status').textContent=`Base MB52: ${added} registros carregados`;
+    document.getElementById('mb52-info').textContent=`${added} registros carregados — ${new Set(MATS.map(m=>m.centro)).size} centros · ${new Set(MATS.map(m=>m.grupo)).size} grupos de mercadorias`;
+    document.getElementById('mb52-result').innerHTML=`<div class="alert alert-ok"><i class="ti ti-check"></i><strong>${added} registros</strong> carregados com sucesso da MB52. Configure o backflush por grupo de mercadorias abaixo.</div>`;
+    document.getElementById('mb52-bf-config').style.display='block';
+    updateMetrics();renderStockSim();
+    toast(`MB52 carregada: ${added} materiais de ${new Set(MATS.map(m=>m.centro)).size} centros`,'ok');
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function populateCentroFilters(){
+  const centros=[...new Set(MATS.map(m=>m.centro))].sort();
+  ['centro-filter','sim-centro-filter'].forEach(id=>{
+    const el=document.getElementById(id);
+    const val=el.value;
+    el.innerHTML='<option value="">Todos os centros</option>';
+    centros.forEach(c=>el.innerHTML+=`<option value="${c}" ${c===val?'selected':''}>${c}</option>`);
+  });
+}
+
+function populateGrpFilters(){
+  const grps=[...new Set(MATS.map(m=>m.grupo).filter(Boolean))].sort();
+  const el=document.getElementById('grp-filter');
+  const val=el.value;
+  el.innerHTML='<option value="">Todos os grupos</option>';
+  grps.forEach(g=>el.innerHTML+=`<option value="${g}" ${g===val?'selected':''}>Grupo ${g}</option>`);
+}
+
+function populateBFConfig(){
+  const grps=[...new Set(MATS.map(m=>m.grupo).filter(Boolean))].sort();
+  const el=document.getElementById('grp-bf-list');
+  el.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px">';
+  grps.forEach(g=>{
+    el.innerHTML+=`<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;background:var(--g50);padding:6px 10px;border-radius:var(--r-md);border:1px solid var(--g200)">
+      <input type="checkbox" ${BF_GRUPOS.has(g)?'checked':''} data-grp="${g}" style="accent-color:var(--teal)">
+      Grupo ${g}
+    </label>`;
+  });
+  el.innerHTML+='</div>';
+}
+
+function applyBFConfig(){
+  BF_GRUPOS.clear();
+  document.querySelectorAll('[data-grp]').forEach(c=>{if(c.checked)BF_GRUPOS.add(c.dataset.grp);});
+  MATS.forEach(m=>m.bf=BF_GRUPOS.has(m.grupo));
+  renderEstoqueTable();renderStockSim();
+  toast(`Backflush configurado: ${BF_GRUPOS.size} grupo(s) com baixa automática`,'ok');
+}
+
+// ═══════════════════════════════════════════════════════
+// IMPORTAR OS
+// ═══════════════════════════════════════════════════════
+function handleOSFile(input){if(input.files[0])processOSFile(input.files[0]);}
+
+function processOSFile(file){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
+    // pre-flight
+    const errs=[],warns=[],oks=[];
+    const dataRows=rows.filter((r,i)=>i>0&&r[0]);
+    dataRows.forEach((row,ri)=>{
+      const rawId=String(row[0]||'').trim().replace(/\D/g,'');
+      if(!/^\d{10}$/.test(rawId)){errs.push({ri:ri+2,msg:`Número de OS inválido: "${row[0]}" — esperado 10 dígitos numéricos (padrão SAP Sabesp)`});return;}
+      if(OS_LIST.find(o=>o.id===rawId)){warns.push({ri:ri+2,msg:`OS ${rawId} já existe — será ignorada`});return;}
+      // check materials
+      const matsStr=String(row[5]||'').trim();
+      if(matsStr){matsStr.split(';').forEach(pair=>{
+        const[mid,q]=pair.trim().split(':');
+        const matId=(mid||'').trim().padStart(10,'0');
+        if(MATS.length&&!getMat(matId))errs.push({ri:ri+2,msg:`Material "${mid}" não encontrado na base MB52 — importe a MB52 antes das OS`});
+        if(!q||isNaN(Number(q)))errs.push({ri:ri+2,msg:`Quantidade inválida para "${mid}" na linha ${ri+2}`});
+      });}
+      if(!errs.find(err=>err.ri===ri+2))oks.push(ri+2);
+    });
+
+    const pfEl=document.getElementById('preflight-os');
+    let pfHtml='<div style="font-size:12px;font-weight:600;color:var(--g800);margin-bottom:6px">Pre-flight check:</div>';
+    if(oks.length)pfHtml+=`<div class="preflight-row preflight-ok"><i class="ti ti-check"></i>${oks.length} linha(s) válida(s)</div>`;
+    warns.forEach(w=>pfHtml+=`<div class="preflight-row preflight-warn"><i class="ti ti-alert-triangle"></i>Linha ${w.ri}: ${w.msg}</div>`);
+    errs.forEach(err=>pfHtml+=`<div class="preflight-row preflight-err"><i class="ti ti-x-circle"></i>Erro na linha ${err.ri}: ${err.msg}</div>`);
+    pfEl.innerHTML=pfHtml;
+
+    if(errs.length){document.getElementById('import-os-result').innerHTML='<div class="alert alert-err"><i class="ti ti-x-circle"></i>Importação bloqueada — corrija os erros acima e tente novamente</div>';return;}
+
+    let added=0;
+    dataRows.forEach(row=>{
+      const id=String(row[0]||'').trim().replace(/\D/g,'').padStart(10,'0');
+      if(!id||OS_LIST.find(o=>o.id===id))return;
+      const centro=String(row[1]||'').trim();
+      const emp=String(row[2]||'').trim();
+      const tipo=String(row[3]||'').trim();
+      const status=String(row[4]||'aberta').trim().toLowerCase();
+      const mats=[];
+      const matsStr=String(row[5]||'').trim();
+      if(matsStr){matsStr.split(';').forEach(pair=>{
+        const[mid,q]=pair.trim().split(':');
+        const matId=(mid||'').trim().padStart(10,'0');
+        if(matId&&!isNaN(Number(q)))mats.push({id:matId,q:parseFloat(q)||1});
+      });}
+      const osStatus=['aberta','em-andamento','confirmada','cancelada'].includes(status)?status:'aberta';
+      OS_LIST.push({id,centro,emp,tipo,status:osStatus,mats,_origStatus:osStatus});
+      added++;
+    });
+    document.getElementById('import-os-result').innerHTML=`<div class="alert alert-ok"><i class="ti ti-check"></i>${added} OS importada(s) com sucesso</div>`;
+    updateMetrics();toast(`${added} OS importada(s)`,'ok');
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function dlOSTemplate(){
+  const ws=XLSX.utils.aoa_to_sheet([
+    ['Nº OS (10 dígitos)','Centro SAP','Contratada','Tipo de Serviço','Status','Materiais (CODIGO:QTD separados por ;)'],
+    ['4000123456','0366','Construtora Alpha Ltda','Substituição de rede','aberta','1300000116:4;1300000355:8'],
+    ['4000123457','0420','HidroTec Engenharia','Reparo de Vazamento de Água','em-andamento','1300000355:2;1300000402:1'],
+  ]);
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'OS');
+  XLSX.writeFile(wb,'modelo_os_sabesp_v4.xlsx');
+}
+
+// drag & drop
+['dz-mb52','dz-os'].forEach(id=>{
+  const el=document.getElementById(id);
+  el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('drag')});
+  el.addEventListener('dragleave',()=>el.classList.remove('drag'));
+  el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('drag');
+    const f=e.dataTransfer.files[0];if(f){if(id==='dz-mb52')processMB52(f);else processOSFile(f);}
+  });
+});
+
+// ═══════════════════════════════════════════════════════
+// OS CADASTRO
+// ═══════════════════════════════════════════════════════
+function validateOSNum(input){
+  const val=input.value.replace(/\D/g,'');input.value=val;
+  const ok=/^\d{10}$/.test(val);
+  input.className=val.length===0?'':ok?'valid':'invalid';
+  document.getElementById('nos-id-err').style.display=(!ok&&val.length>0)?'block':'none';
+  return ok;
+}
+
+function populateDataLists(){
+  // centros from MB52
+  const centros=[...new Set(MATS.map(m=>m.centro))].sort();
+  const ecl=document.getElementById('list-centros');ecl.innerHTML='';
+  centros.forEach(c=>{const o=document.createElement('option');o.value=c;ecl.appendChild(o);});
+  // contratadas
+  const ec=document.getElementById('list-contratadas');ec.innerHTML='';
+  CONTRATADAS.forEach(c=>{const o=document.createElement('option');o.value=c;ec.appendChild(o);});
+  // tipos
+  const et=document.getElementById('list-tipos');et.innerHTML='';
+  TIPOS.forEach(t=>{const o=document.createElement('option');o.value=t;et.appendChild(o);});
+}
+
+function addMatRow(){
+  const wrap=document.getElementById('mat-rows');
+  const row=document.createElement('div');row.className='mat-add-row';
+  const opts=MATS.length
+    ?MATS.map(m=>`<option value="${m.id}">${m.id} — ${m.nome.substring(0,35)} (${m.unid}) · ${m.centro}</option>`).join('')
+    :'<option value="">Nenhum material na MB52</option>';
+  row.innerHTML=`
+    <select style="padding:8px;border:1px solid var(--g200);border-radius:var(--r-md);font-size:12px;color:var(--g800)">
+      <option value="">Buscar material na MB52...</option>${opts}
+    </select>
+    <input type="number" min="0.01" step="0.01" value="1" style="padding:8px;border:1px solid var(--g200);border-radius:var(--r-md);font-size:12px">
+    <button class="btn-icon" onclick="this.parentElement.remove()" title="Remover"><i class="ti ti-x"></i></button>`;
+  row.querySelector('select').onchange=function(){
+    const mat=getMat(this.value);if(!mat)return;
+    const inp=row.querySelector('input');
+    inp.step=isDecimal(mat.unid)?'0.01':'1';inp.min=isDecimal(mat.unid)?'0.01':'1';
+    if(!isDecimal(mat.unid))inp.value=Math.max(1,Math.round(parseFloat(inp.value)||1));
+  };
+  wrap.appendChild(row);
+}
+
+function saveOS(){
+  const alertEl=document.getElementById('os-cad-alert');alertEl.innerHTML='';
+  const id=document.getElementById('nos-id').value.trim();
+  if(!/^\d{10}$/.test(id)){alertEl.innerHTML='<div class="alert alert-err"><i class="ti ti-x-circle"></i>Número da OS inválido — use exatamente 10 dígitos numéricos (padrão SAP Sabesp)</div>';return;}
+  if(OS_LIST.find(o=>o.id===id)){alertEl.innerHTML='<div class="alert alert-err"><i class="ti ti-x-circle"></i>Esta OS já está cadastrada</div>';return;}
+  const centro=document.getElementById('nos-centro').value.trim();
+  const emp=document.getElementById('nos-emp').value.trim();
+  const tipo=document.getElementById('nos-tipo').value.trim();
+  if(!emp||!tipo){alertEl.innerHTML='<div class="alert alert-err"><i class="ti ti-x-circle"></i>Informe a contratada e o tipo de serviço</div>';return;}
+  const rows=document.getElementById('mat-rows').children;
+  const mats=[];const errs=[];
+  for(let r of rows){
+    const sel=r.querySelector('select');const inp=r.querySelector('input');
+    const matId=sel.value;if(!matId)continue;
+    const mat=getMat(matId);if(!mat){errs.push(`Material ${matId} não encontrado na MB52`);continue;}
+    let q=parseFloat(inp.value);if(isNaN(q)||q<=0){errs.push(`Quantidade inválida para ${mat.nome.substring(0,20)}`);continue;}
+    if(!isDecimal(mat.unid))q=Math.round(q);
+    mats.push({id:matId,q});
+  }
+  if(errs.length){alertEl.innerHTML=`<div class="alert alert-err"><i class="ti ti-x-circle"></i><div>${errs.join('<br>')}</div></div>`;return;}
+  if(!mats.length){alertEl.innerHTML='<div class="alert alert-warn"><i class="ti ti-alert-triangle"></i>Adicione pelo menos um material à OS</div>';return;}
+  const status=document.getElementById('nos-status').value;
+  OS_LIST.push({id,centro,emp,tipo,status,mats,_origStatus:status});
+  clearOSForm();
+  toast(`OS ${id} cadastrada com sucesso`,'ok');
+  alertEl.innerHTML='<div class="alert alert-ok"><i class="ti ti-check"></i>OS cadastrada com sucesso!</div>';
+  setTimeout(()=>alertEl.innerHTML='',3000);
+}
+
+function clearOSForm(){
+  ['nos-id','nos-emp','nos-tipo','nos-centro'].forEach(f=>{const el=document.getElementById(f);el.value='';el.className='';});
+  document.getElementById('nos-status').value='aberta';
+  document.getElementById('mat-rows').innerHTML='';
+  document.getElementById('os-cad-alert').innerHTML='';
+  addMatRow();
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+populateDataLists();addMatRow();renderOSList();updateMetrics();
+</script>
+</body>
+</html>
